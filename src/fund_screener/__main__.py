@@ -2,13 +2,13 @@
 """基金筛选系统 - 主入口
 
 使用方法:
-1. 初始化数据库: python main.py init
-2. 更新基金数据: python main.py update-funds
-3. 执行筛选: python main.py screen [--limit 100]
-4. 执行回测: python main.py backtest
-5. 推送报告: python main.py notify
-6. 完整流程: python main.py run-all
-7. 启动定时任务: python main.py schedule
+1. 初始化数据库: python -m fund_screener init
+2. 更新基金数据: python -m fund_screener update-funds
+3. 执行筛选: python -m fund_screener screen [--limit 100]
+4. 执行回测: python -m fund_screener backtest
+5. 推送报告: python -m fund_screener notify
+6. 完整流程: python -m fund_screener run-all
+7. 启动定时任务: python -m fund_screener schedule
 """
 
 import os
@@ -20,17 +20,14 @@ from dotenv import load_dotenv
 # 加载环境变量
 load_dotenv()
 
-# 添加项目根目录到路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from loguru import logger
-from data.models import init_db, SessionLocal
-from data.fetcher import FundDataFetcher, init_fund_data
-from data.database import FundRepository
-from analysis.screener import FundScreener
-from analysis.backtest import FundBacktest
-from report.generator import ReportGenerator
-from report.notifier import MultiNotifier
+from fund_screener.data.models import init_db, SessionLocal
+from fund_screener.data.fetcher import FundDataFetcher, init_fund_data
+from fund_screener.data.database import FundRepository
+from fund_screener.analysis.screener import FundScreener
+from fund_screener.analysis.backtest import FundBacktest
+from fund_screener.report.generator import ReportGenerator
+from fund_screener.report.notifier import MultiNotifier
 
 # 配置日志
 logger.add(
@@ -273,7 +270,7 @@ def run_all():
 def start_scheduler():
     """启动定时任务"""
     from apscheduler.schedulers.blocking import BlockingScheduler
-    from config.settings import SCHEDULE_CONFIG
+    from fund_screener.config.settings import SCHEDULE_CONFIG
 
     logger.info("启动定时任务...")
     logger.info(
@@ -302,7 +299,7 @@ def start_scheduler():
 
 def test_notifier():
     """测试推送功能"""
-    from report.notifier import test_notifier as _test_notifier
+    from fund_screener.report.notifier import test_notifier as _test_notifier
 
     _test_notifier()
 

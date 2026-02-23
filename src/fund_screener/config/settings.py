@@ -6,13 +6,30 @@ from pathlib import Path
 # 项目根目录
 BASE_DIR = Path(__file__).parent.parent
 
-# 数据库配置
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/fund_screener"
-)
+# 数据库类型选择: sqlite / mariadb / postgresql
+DB_TYPE = os.getenv("DB_TYPE", "mariadb")
 
-# SQLite备选（如果没有PostgreSQL）
+# MariaDB 配置（默认）
+MARIADB_HOST = os.getenv("MARIADB_HOST", "10.12.252.20")
+MARIADB_PORT = os.getenv("MARIADB_PORT", "3306")
+MARIADB_USER = os.getenv("MARIADB_USER", "fund_screener")
+MARIADB_PASSWORD = os.getenv("MARIADB_PASSWORD", "H8QENPm6pmiyCpQE")
+MARIADB_DATABASE = os.getenv("MARIADB_DATABASE", "fund_screener")
+MARIADB_URL = f"mysql+pymysql://{MARIADB_USER}:{MARIADB_PASSWORD}@{MARIADB_HOST}:{MARIADB_PORT}/{MARIADB_DATABASE}"
+
+# PostgreSQL 配置（保留但不启用）
+# PG_HOST = os.getenv("PG_HOST", "10.12.252.20")
+# PG_PORT = os.getenv("PG_PORT", "5432")
+# PG_USER = os.getenv("PG_USER", "fund_screener")
+# PG_PASSWORD = os.getenv("PG_PASSWORD", "H8QENPm6pmiyCpQE")
+# PG_DATABASE = os.getenv("PG_DATABASE", "fund_screener")
+# POSTGRESQL_URL = f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DATABASE}"
+
+# SQLite 默认路径
 SQLITE_URL = f"sqlite:///{BASE_DIR}/fund_screener.db"
+
+# 兼容旧的 DATABASE_URL 环境变量（向后兼容）
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 # Server酱配置
 SERVER_CHAN_KEY = os.getenv("SERVER_CHAN_KEY", "")
@@ -40,13 +57,15 @@ SCREENING_CONFIG = {
     "max_drawdown": 25.0,  # 最大回撤上限（%）
     "min_sharpe": 0.8,  # 最小夏普比率
     "min_annual_return": 5.0,  # 最小年化收益（%）
+    "min_manager_exp_years": 1,  # 基金经理最少任职年限
     # 打分权重（总和应为100）
     "weights": {
-        "annual_return_3y": 30,  # 3年年化收益权重
-        "sharpe_ratio": 25,  # 夏普比率权重
-        "calmar_ratio": 20,  # 卡玛比率权重
-        "monthly_win_rate": 15,  # 月度胜率权重
+        "annual_return_3y": 25,  # 3年年化收益权重
+        "sharpe_ratio": 20,  # 夏普比率权重
+        "calmar_ratio": 15,  # 卡玛比率权重
+        "monthly_win_rate": 10,  # 月度胜率权重
         "max_drawdown_control": 10,  # 回撤控制权重
+        "manager_score": 20,  # 基金经理评分权重
     },
     # 输出配置
     "top_n": 10,  # 输出前N只基金

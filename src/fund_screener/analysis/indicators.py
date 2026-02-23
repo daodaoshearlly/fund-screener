@@ -319,4 +319,80 @@ def calculate_fund_score(metrics: Dict, weights: Dict) -> Optional[float]:
         dd_score = max(0, (30 - drawdown) / 30) * 100  # 30%回撤为0分
         score += dd_score * weights["max_drawdown_control"] / total_weight
 
+    # 基金经理评分
+    if "manager_score" in metrics and "manager_score" in weights:
+        manager_score = metrics["manager_score"]
+        score += manager_score * weights["manager_score"] / total_weight
+
     return round(score, 2)
+
+
+def calculate_manager_score(db, manager: str, min_years: int = 1) -> Optional[float]:
+    """计算基金经理评分
+    
+    基于基金经理历史管理的基金表现进行评分：
+    - 管理基金数量（越多经验越丰富）
+    - 管理基金的平均收益表现
+    - 管理基金的最大回撤控制
+    
+    Args:
+        db: 数据库会话
+        manager: 基金经理名称（可能多个，用空格分隔）
+        min_years: 最少任职年限
+        
+    Returns:
+        基金经理评分（0-100）
+    """
+    from fund_screener.data.models import Fund, FundMetrics
+    from sqlalchemy import func, or_
+    
+    if not manager:
+        return None
+    
+    # 处理多个基金经理的情况（取第一个）
+    manager_name = manager.split()[0]
+    
+    try:
+        # 查询该基金经理管理的所有基金
+        # 使用模糊匹配（基金经理名字可能在字段的任何位置）
+        manager_funds = db.query(Fund).filter(
+            Fund.manager.like(f"%{manager_name}%")
+        ).all()
+        
+        if not manager_funds or len(manager_funds) < 2:
+            return None  # 至少管理2只基金才有参考价值
+        
+        # 获取每只基金的指标
+        total_score = 0
+        count = 0
+        
+        for fund in manager_funds:
+            metric = db.query(FundMetrics).filter(
+                FundMetrics.fund_code == fund.fund_code
+            ).first()
+            
+            if metric and metric.sharpe_ratio and metric.max_drawdown:
+                # 计算单只基金的得分
+                # 夏普评分
+                sharpe_score = min(metric.sharpe_ratio / 2, 1) * 50
+                # 回撤控制评分
+                dd_score = max(0, (30 - abs(metric.max_drawdown)) / 30) * 50
+                
+                total_score += sharpe_score + dd_score
+                count += 1
+        
+        if count == 0:
+            return None
+            
+        # 平均得分
+        avg_score = total_score / count
+        
+        # 基金数量加分（管理基金越多，加分越多）
+        fund_count_bonus = min(len(manager_funds) * 2, 20)  # 最多加20分
+        
+        final_score = min(avg_score + fund_count_bonus, 100)
+        
+        return round(final_score, 2)
+        
+    except Exception as e:
+        return None

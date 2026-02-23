@@ -6,13 +6,14 @@ from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 from loguru import logger
 
-from config.settings import SCREENING_CONFIG
-from data.database import FundRepository
-from data.fetcher import FundDataFetcher
-from analysis.indicators import (
+from fund_screener.config.settings import SCREENING_CONFIG
+from fund_screener.data.database import FundRepository
+from fund_screener.data.fetcher import FundDataFetcher
+from fund_screener.analysis.indicators import (
     FundIndicators,
     filter_funds_by_metrics,
     calculate_fund_score,
+    calculate_manager_score,
 )
 
 
@@ -96,6 +97,16 @@ class FundScreener:
             # 硬性门槛筛选
             if not filter_funds_by_metrics(metrics, self.config):
                 continue
+
+            # 计算基金经理评分
+            manager_score = None
+            if fund.manager and "manager_score" in self.config["weights"]:
+                manager_score = calculate_manager_score(
+                    self.db, fund.manager, self.config.get("min_manager_exp_years", 1)
+                )
+                if manager_score is not None:
+                    metrics["manager_score"] = manager_score
+                    logger.debug(f"基金 {fund.fund_code} 经理 {fund.manager} 评分: {manager_score}")
 
             # 计算综合评分
             score = calculate_fund_score(metrics, self.config["weights"])

@@ -1,14 +1,32 @@
 """SQLAlchemy数据库模型定义"""
 
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Date, DateTime, Integer, create_engine
+
+from sqlalchemy import Column, Date, DateTime, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from config.settings import DATABASE_URL, SQLITE_URL
-import os
 
-# 如果没有配置PostgreSQL，使用SQLite
-engine_url = DATABASE_URL if "postgresql" in DATABASE_URL else SQLITE_URL
+from fund_screener.config.settings import (
+    DATABASE_URL,
+    DB_TYPE,
+    MARIADB_URL,
+    SQLITE_URL,
+)
+
+# 数据库选择逻辑：
+# 1. 优先使用 DATABASE_URL 环境变量（向后兼容）
+# 2. 根据 DB_TYPE 选择数据库类型
+# 3. 默认使用 MariaDB
+if DATABASE_URL:
+    engine_url = DATABASE_URL
+elif DB_TYPE == "mariadb":
+    engine_url = MARIADB_URL
+elif DB_TYPE == "postgresql":
+    from fund_screener.config.settings import POSTGRESQL_URL
+
+    engine_url = POSTGRESQL_URL
+else:
+    engine_url = SQLITE_URL
 engine = create_engine(engine_url, echo=False)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -70,6 +88,7 @@ class FundMetrics(Base):
     volatility = Column(Float, comment="年化波动率")
     calmar_ratio = Column(Float, comment="卡玛比率")
     monthly_win_rate = Column(Float, comment="月度胜率")
+    manager_score = Column(Float, comment="基金经理评分")
 
     # 综合评分
     total_score = Column(Float, comment="综合评分")

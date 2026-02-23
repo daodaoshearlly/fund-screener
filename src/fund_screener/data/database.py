@@ -3,7 +3,13 @@
 from typing import List, Optional
 from datetime import date, datetime
 from sqlalchemy.orm import Session
-from data.models import Fund, FundNav, FundMetrics, BacktestResult, SelectedFund
+from fund_screener.data.models import (
+    Fund,
+    FundNav,
+    FundMetrics,
+    BacktestResult,
+    SelectedFund,
+)
 
 
 class FundRepository:

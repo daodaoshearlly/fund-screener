@@ -7,7 +7,7 @@ from email.utils import formataddr
 import requests
 from typing import Optional, List
 from loguru import logger
-from config.settings import (
+from fund_screener.config.settings import (
     SERVER_CHAN_KEY,
     WECOM_WEBHOOK,
     SMTP_HOST,

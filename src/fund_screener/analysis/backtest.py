@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional
 from loguru import logger
 
-from data.fetcher import FundDataFetcher
-from data.database import FundRepository
+from fund_screener.data.fetcher import FundDataFetcher
+from fund_screener.data.database import FundRepository
 
 
 class FundBacktest:

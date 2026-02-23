@@ -142,8 +142,7 @@ score = (
 ```
 fund-screener/
 ├── config/
-│   ├── settings.py          # 配置（数据库、Server酱key、筛选参数）
-│   └── requirements.txt     # Python依赖
+│   └── settings.py          # 配置（数据库、Server酱key、筛选参数）
 ├── data/
 │   ├── fetcher.py           # AKShare数据抓取
 │   ├── database.py          # 数据库连接和操作
@@ -155,6 +154,9 @@ fund-screener/
 ├── report/
 │   ├── generator.py         # 报告生成
 │   └── notifier.py          # Server酱推送
+├── .env.example             # 环境变量示例
+├── pyproject.toml           # 项目配置（uv规范）
+├── requirements.txt         # Python依赖（兼容模式）
 ├── main.py                  # 主入口，定时任务调度
 └── README.md                # 项目说明
 ```

@@ -7,11 +7,12 @@ numpy>=1.24.0
 
 # 数据库
 sqlalchemy>=2.0.0
-psycopg2-binary>=2.9.0
+pymysql>=1.1.0
+# psycopg2-binary>=2.9.0  # PostgreSQL (保留但未启用)
 alembic>=1.12.0
 
 # 数据抓取
-akshare>=1.11.0
+akshare  # 始终使用最新版
 requests>=2.31.0
 
 # 定时任务
