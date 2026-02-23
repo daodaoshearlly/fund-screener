@@ -32,6 +32,7 @@ env/
 *.swp
 *.swo
 *~
+.lingma/
 
 # Project specific
 *.db

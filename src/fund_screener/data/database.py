@@ -39,6 +39,37 @@ class FundRepository:
         self.db.commit()
         return fund
 
+    def batch_upsert_funds(self, funds_data: List[dict], batch_size: int = 100):
+        """批量更新或插入基金信息
+        
+        Args:
+            funds_data: 基金数据列表
+            batch_size: 每批提交的数量
+        """
+        existing_codes = set(
+            f.fund_code for f in self.db.query(Fund.fund_code).all()
+        )
+        
+        for i, fund_data in enumerate(funds_data):
+            fund_code = fund_data["fund_code"]
+            if fund_code in existing_codes:
+                # 更新已有记录
+                fund = self.db.query(Fund).filter(Fund.fund_code == fund_code).first()
+                for key, value in fund_data.items():
+                    setattr(fund, key, value)
+                fund.updated_at = datetime.now()
+            else:
+                # 插入新记录
+                fund = Fund(**fund_data)
+                self.db.add(fund)
+            
+            # 批量提交
+            if (i + 1) % batch_size == 0:
+                self.db.commit()
+        
+        # 提交剩余记录
+        self.db.commit()
+
     def get_fund_nav(
         self, fund_code: str, start_date: date = None, end_date: date = None
     ) -> List[FundNav]:
@@ -66,6 +97,46 @@ class FundRepository:
                 self.db.add(nav_record)
 
         self.db.commit()
+
+    def batch_save_nav_data(self, fund_code: str, nav_data: List[dict], batch_size: int = 100):
+        """批量保存净值数据（优化版本，减少数据库提交次数）
+        
+        Args:
+            fund_code: 基金代码
+            nav_data: 净值数据列表
+            batch_size: 每批提交的数量
+        """
+        # 先查询已存在的日期
+        existing_dates = set()
+        existing_records = self.db.query(FundNav.nav_date).filter(
+            FundNav.fund_code == fund_code
+        ).all()
+        for record in existing_records:
+            existing_dates.add(record.nav_date)
+        
+        # 过滤掉已存在的记录
+        new_records = [data for data in nav_data if data["nav_date"] not in existing_dates]
+        
+        if not new_records:
+            return
+        
+        # 批量添加
+        for i, data in enumerate(new_records):
+            nav_record = FundNav(fund_code=fund_code, **data)
+            self.db.add(nav_record)
+            
+            # 分批提交
+            if (i + 1) % batch_size == 0:
+                try:
+                    self.db.commit()
+                except Exception:
+                    self.db.rollback()
+        
+        # 提交剩余的记录
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
 
     def save_metrics(self, fund_code: str, metrics: dict):
         """保存基金指标"""

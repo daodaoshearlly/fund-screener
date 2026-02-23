@@ -45,6 +45,7 @@ class Fund(Base):
     establish_date = Column(Date, comment="成立日期")
     fund_size = Column(Float, comment="基金规模（亿）")
     company = Column(String(100), comment="基金公司")
+    is_quant = Column(Integer, default=0, comment="是否量化基金(0-否/1-是)")
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")
     updated_at = Column(
         DateTime, default=datetime.now, onupdate=datetime.now, comment="更新时间"

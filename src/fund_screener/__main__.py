@@ -22,20 +22,27 @@ load_dotenv()
 
 from loguru import logger
 from fund_screener.data.models import init_db, SessionLocal
-from fund_screener.data.fetcher import FundDataFetcher, init_fund_data
+from fund_screener.data.fetcher import FundDataFetcher, init_fund_data, init_nav_data
 from fund_screener.data.database import FundRepository
 from fund_screener.analysis.screener import FundScreener
 from fund_screener.analysis.backtest import FundBacktest
 from fund_screener.report.generator import ReportGenerator
 from fund_screener.report.notifier import MultiNotifier
 
-# 配置日志
+# 配置日志 - 同时输出到文件和控制台
+# 文件中记录DEBUG及以上级别
 logger.add(
     "logs/fund_screener.log",
     rotation="500 MB",
     retention="10 days",
-    level="INFO",
+    level="DEBUG",
     encoding="utf-8",
+)
+# 控制台只输出INFO及以上级别（减少噪音）
+logger.add(
+    sys.stderr,
+    level="INFO",
+    format="<level>{message}</level>",
 )
 
 
@@ -58,6 +65,25 @@ def update_fund_data(limit: int = None):
         logger.success("基金数据更新完成")
     except Exception as e:
         logger.error(f"更新基金数据失败: {e}")
+    finally:
+        db.close()
+
+
+def update_nav_data(limit: int = None, max_workers: int = 10):
+    """更新基金净值数据（批量并行抓取）"""
+    from fund_screener.config.settings import MAX_WORKERS
+    
+    actual_workers = max_workers if max_workers > 0 else MAX_WORKERS
+    logger.info(f"开始更新基金净值数据...（并行线程数: {actual_workers}）")
+
+    db = SessionLocal()
+    fetcher = FundDataFetcher()
+
+    try:
+        init_nav_data(db, fetcher, limit=limit, max_workers=actual_workers)
+        logger.success("基金净值数据更新完成")
+    except Exception as e:
+        logger.error(f"更新基金净值数据失败: {e}")
     finally:
         db.close()
 
@@ -312,6 +338,7 @@ def main():
         choices=[
             "init",
             "update-funds",
+            "update-nav",
             "screen",
             "backtest",
             "notify",
@@ -322,6 +349,8 @@ def main():
         help="要执行的命令",
     )
     parser.add_argument("--limit", type=int, help="限制处理的基金数量（测试用）")
+    parser.add_argument("--workers", type=int, default=10, help="并行线程数（默认10）")
+    parser.add_argument("--min-records", type=int, default=500, help="最少净值记录数（默认500）")
 
     args = parser.parse_args()
 
@@ -334,6 +363,9 @@ def main():
 
     elif args.command == "update-funds":
         update_fund_data(limit=args.limit)
+
+    elif args.command == "update-nav":
+        update_nav_data(limit=args.limit, max_workers=args.workers)
 
     elif args.command == "screen":
         screen_funds(limit=args.limit)

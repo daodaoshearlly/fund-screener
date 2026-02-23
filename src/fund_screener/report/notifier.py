@@ -247,13 +247,20 @@ class EmailNotifier:
             msg.attach(MIMEText(content, content_type, "utf-8"))
 
             # 发送邮件
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.smtp_user, self.smtp_password)
-
-                # 支持多个收件人
-                receivers = [r.strip() for r in self.receiver.split(",")]
-                server.sendmail(self.smtp_user, receivers, msg.as_string())
+            # 163邮箱等使用SSL端口465，Gmail等使用TLS端口587
+            if self.smtp_port == 465:
+                # SSL加密连接
+                with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port) as server:
+                    server.login(self.smtp_user, self.smtp_password)
+                    receivers = [r.strip() for r in self.receiver.split(",")]
+                    server.sendmail(self.smtp_user, receivers, msg.as_string())
+            else:
+                # TLS加密连接
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    server.starttls()
+                    server.login(self.smtp_user, self.smtp_password)
+                    receivers = [r.strip() for r in self.receiver.split(",")]
+                    server.sendmail(self.smtp_user, receivers, msg.as_string())
 
             logger.info("邮件推送成功")
             return True
@@ -449,23 +456,53 @@ def test_notifier():
     print("测试消息推送功能")
     print("=" * 50)
 
+    # 检查各渠道配置状态
+    print("\n📋 渠道配置状态：")
+    print("-" * 30)
+
+    channels_config = {
+        "Server酱": {
+            "configured": bool(SERVER_CHAN_KEY),
+            "key": "SERVER_CHAN_KEY",
+            "help": "https://sct.ftqq.com/",
+        },
+        "企业微信": {
+            "configured": bool(WECOM_WEBHOOK),
+            "key": "WECOM_WEBHOOK",
+            "help": "企业微信群添加机器人获取",
+        },
+        "邮件推送": {
+            "configured": all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD, EMAIL_RECEIVER]),
+            "key": "SMTP_HOST/USER/PASSWORD/RECEIVER",
+            "help": "Gmail/QQ邮箱/163邮箱等",
+        },
+    }
+
+    for name, config in channels_config.items():
+        status = "✅ 已配置" if config["configured"] else "❌ 未配置"
+        print(f"{name}: {status}")
+        if not config["configured"]:
+            print(f"   环境变量: {config['key']}")
+            print(f"   获取方式: {config['help']}")
+
     # 测试多渠道推送
+    print("\n📤 推送测试结果：")
+    print("-" * 30)
+
     notifier = MultiNotifier()
     results = notifier.test_connection()
 
-    print("\n测试结果：")
-    print("-" * 30)
-
     if not results:
-        print("⚠️ 未配置任何推送渠道")
-        print("\n配置方法：")
-        print("1. Server酱：设置环境变量 SERVER_CHAN_KEY")
-        print("   获取地址：https://sct.ftqq.com/")
-        print("2. 企业微信：设置环境变量 WECOM_WEBHOOK")
-        print("   获取方式：在企业微信群中添加机器人")
-        print("3. 邮件推送：设置环境变量 SMTP_HOST/USER/PASSWORD/RECEIVER")
-        print("   支持Gmail、QQ邮箱、163邮箱等SMTP服务")
+        print("⚠️ 无已配置渠道可测试")
     else:
+        channel_names = {
+            "server_chan": "Server酱",
+            "wecom": "企业微信",
+            "email": "邮件推送",
+        }
         for channel, success in results.items():
+            name = channel_names.get(channel, channel)
             status = "✅ 成功" if success else "❌ 失败"
-            print(f"{channel}: {status}")
+            print(f"{name}: {status}")
+
+    print("\n" + "=" * 50)

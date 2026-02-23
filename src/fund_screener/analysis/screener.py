@@ -106,7 +106,6 @@ class FundScreener:
                 )
                 if manager_score is not None:
                     metrics["manager_score"] = manager_score
-                    logger.debug(f"基金 {fund.fund_code} 经理 {fund.manager} 评分: {manager_score}")
 
             # 计算综合评分
             score = calculate_fund_score(metrics, self.config["weights"])
@@ -126,7 +125,7 @@ class FundScreener:
                 # 保存指标到数据库
                 self.repo.save_metrics(fund.fund_code, metrics)
 
-            if (idx + 1) % 100 == 0:
+            if (idx + 1) % 1000 == 0:
                 logger.info(
                     f"已处理 {idx + 1}/{len(funds)} 只基金，通过 {len(qualified_funds)} 只"
                 )

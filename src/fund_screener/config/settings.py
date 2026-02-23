@@ -49,6 +49,10 @@ AKSHARE_TIMEOUT = 30  # AKShare请求超时时间（秒）
 MAX_RETRIES = 3  # 重试次数
 RETRY_DELAY = 2  # 重试间隔（秒）
 
+# 并行抓取配置
+MAX_WORKERS = 10  # 并行线程数
+NAV_BATCH_SIZE = 100  # NAV数据批量写入大小
+
 # 筛选参数配置
 SCREENING_CONFIG = {
     # 硬性门槛
