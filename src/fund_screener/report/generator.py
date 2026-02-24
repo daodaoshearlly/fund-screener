@@ -131,19 +131,19 @@ class ReportGenerator:
             lines.append("| 指标 | 数值 |")
             lines.append("|------|------|")
 
-            if "annual_return_3y" in metrics:
+            if metrics.get("annual_return_3y"):
                 lines.append(f"| 近3年年化收益 | {metrics['annual_return_3y']:.2f}% |")
-            if "annual_return_5y" in metrics:
+            if metrics.get("annual_return_5y"):
                 lines.append(f"| 近5年年化收益 | {metrics['annual_return_5y']:.2f}% |")
-            if "sharpe_ratio" in metrics:
+            if metrics.get("sharpe_ratio"):
                 lines.append(f"| 夏普比率 | {metrics['sharpe_ratio']:.2f} |")
-            if "max_drawdown" in metrics:
+            if metrics.get("max_drawdown"):
                 lines.append(f"| 最大回撤 | {metrics['max_drawdown']:.2f}% |")
-            if "calmar_ratio" in metrics:
+            if metrics.get("calmar_ratio"):
                 lines.append(f"| 卡玛比率 | {metrics['calmar_ratio']:.2f} |")
-            if "monthly_win_rate" in metrics:
+            if metrics.get("monthly_win_rate"):
                 lines.append(f"| 月度胜率 | {metrics['monthly_win_rate'] * 100:.1f}% |")
-            if "volatility" in metrics:
+            if metrics.get("volatility"):
                 lines.append(f"| 年化波动率 | {metrics['volatility']:.2f}% |")
 
             lines.append(

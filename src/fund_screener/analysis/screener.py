@@ -45,9 +45,19 @@ class FundScreener:
 
         logger.info(f"共 {len(funds)} 只基金待筛选")
 
+        # 获取配置的基金类型
+        fund_types = self.config.get("fund_types", [])
+        # 处理"全部"的情况
+        if "全部" in fund_types or not fund_types:
+            fund_types = None
+
         qualified_funds = []
 
         for idx, fund in enumerate(funds):
+            # 检查基金类型
+            if fund_types and fund.fund_type not in fund_types:
+                continue
+
             # 检查成立年限
             if fund.establish_date:
                 years_since_establish = (date.today() - fund.establish_date).days / 365

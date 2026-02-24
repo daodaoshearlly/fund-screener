@@ -77,7 +77,7 @@ def update_nav_data(limit: int = None, max_workers: int = 10, force: bool = Fals
         max_workers: 并行线程数
         force: 强制全量更新（忽略已有数据）
     """
-    from fund_screener.config.settings import MAX_WORKERS
+    from fund_screener.config.settings import MAX_WORKERS, AUTO_UPDATE_DATA, SCREENING_CONFIG
     
     actual_workers = max_workers if max_workers > 0 else MAX_WORKERS
     mode = "强制全量更新" if force else "增量更新（跳过已有数据）"
@@ -232,11 +232,24 @@ def send_notification():
 
 def run_all():
     """执行完整流程"""
+    from fund_screener.config.settings import AUTO_UPDATE_DATA, MAX_WORKERS, SCREENING_CONFIG
+    
     logger.info("=" * 60)
     logger.info("开始执行完整流程...")
     logger.info("=" * 60)
 
+    # 0. 更新数据（可选）
+    if AUTO_UPDATE_DATA:
+        logger.info("[自动更新] 开始更新基金基础数据...")
+        update_fund_data()
+        
+        logger.info("[自动更新] 开始更新基金净值数据...")
+        update_nav_data(max_workers=MAX_WORKERS)
+    else:
+        logger.info("[跳过] 数据更新已禁用 (AUTO_UPDATE_DATA=false)")
+
     # 1. 筛选基金
+    logger.info(f"筛选配置: {SCREENING_CONFIG.get('fund_types')}, 收益{SCREENING_CONFIG.get('return_years')}年, 最小年化{SCREENING_CONFIG.get('min_annual_return')}%")
     selected_funds = screen_funds(save_report=True)
 
     if not selected_funds:

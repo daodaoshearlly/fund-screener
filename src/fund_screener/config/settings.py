@@ -53,15 +53,16 @@ RETRY_DELAY = 2  # 重试间隔（秒）
 MAX_WORKERS = 10  # 并行线程数
 NAV_BATCH_SIZE = 100  # NAV数据批量写入大小
 
-# 筛选参数配置
+# 筛选参数配置（从环境变量读取，支持在 .env 中配置）
 SCREENING_CONFIG = {
-    # 硬性门槛
-    "min_establish_years": 3,  # 最少成立年限
-    "min_fund_size": 2.0,  # 最小规模（亿）
-    "max_drawdown": 25.0,  # 最大回撤上限（%）
-    "min_sharpe": 0.8,  # 最小夏普比率
-    "min_annual_return": 5.0,  # 最小年化收益（%）
-    "min_manager_exp_years": 1,  # 基金经理最少任职年限
+    "fund_types": os.getenv("SCREEN_FUND_TYPES", "全部").split(","),  # 基金类型
+    "return_years": int(os.getenv("SCREEN_RETURN_YEARS", "3")),  # 收益计算年限
+    "min_establish_years": float(os.getenv("SCREEN_MIN_ESTABLISH_YEARS", "3")),  # 最少成立年限
+    "min_fund_size": float(os.getenv("SCREEN_MIN_SIZE", "2.0")),  # 最小规模（亿）
+    "max_drawdown": float(os.getenv("SCREEN_MAX_DRAWDOWN", "25.0")),  # 最大回撤上限（%）
+    "min_sharpe": float(os.getenv("SCREEN_MIN_SHARPE", "0.8")),  # 最小夏普比率
+    "min_annual_return": float(os.getenv("SCREEN_MIN_RETURN", "5.0")),  # 最小年化收益（%）
+    "min_manager_exp_years": int(os.getenv("SCREEN_MIN_MANAGER_EXP", "1")),  # 基金经理最少任职年限
     # 打分权重（总和应为100）
     "weights": {
         "annual_return_3y": 25,  # 3年年化收益权重
@@ -71,9 +72,11 @@ SCREENING_CONFIG = {
         "max_drawdown_control": 10,  # 回撤控制权重
         "manager_score": 20,  # 基金经理评分权重
     },
-    # 输出配置
-    "top_n": 10,  # 输出前N只基金
+    "top_n": int(os.getenv("SCREEN_TOP_N", "10")),  # 输出前N只基金
 }
+
+# 自动更新数据配置
+AUTO_UPDATE_DATA = os.getenv("AUTO_UPDATE_DATA", "true").lower() == "true"
 
 # 回测配置
 BACKTEST_CONFIG = {
