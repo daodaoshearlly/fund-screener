@@ -54,9 +54,15 @@ class FundScreener:
         qualified_funds = []
 
         for idx, fund in enumerate(funds):
-            # 检查基金类型
-            if fund_types and fund.fund_type not in fund_types:
-                continue
+            # 检查基金类型（支持模糊匹配，如"股票型"匹配"股票型-普通"）
+            if fund_types:
+                matched = False
+                for ft in fund_types:
+                    if ft in fund.fund_type:
+                        matched = True
+                        break
+                if not matched:
+                    continue
 
             # 检查成立年限
             if fund.establish_date:
