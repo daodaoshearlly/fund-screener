@@ -84,9 +84,8 @@ BACKTEST_CONFIG = {
     },
 }
 
-# 定时任务配置（每周一上午9:00运行）
+# 定时任务配置（每天早上7:00运行）
 SCHEDULE_CONFIG = {
-    "day_of_week": "mon",  # 周一
-    "hour": 9,  # 9点
+    "hour": 7,  # 7点
     "minute": 0,  # 0分
 }

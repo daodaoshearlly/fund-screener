@@ -106,6 +106,7 @@ uv run fund-screener update-funds
 uv run fund-screener update-nav
 uv run fund-screener update-nav --workers 20  # 自定义线程数
 uv run fund-screener update-nav --limit 100 --workers 10  # 限制100只基金
+uv run fund-screener update-nav --force  # 强制全量更新（忽略已有数据）
 
 # 执行筛选
 uv run fund-screener screen

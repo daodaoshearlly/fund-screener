@@ -69,18 +69,25 @@ def update_fund_data(limit: int = None):
         db.close()
 
 
-def update_nav_data(limit: int = None, max_workers: int = 10):
-    """更新基金净值数据（批量并行抓取）"""
+def update_nav_data(limit: int = None, max_workers: int = 10, force: bool = False):
+    """更新基金净值数据（批量并行抓取）
+    
+    Args:
+        limit: 限制处理的基金数量
+        max_workers: 并行线程数
+        force: 强制全量更新（忽略已有数据）
+    """
     from fund_screener.config.settings import MAX_WORKERS
     
     actual_workers = max_workers if max_workers > 0 else MAX_WORKERS
-    logger.info(f"开始更新基金净值数据...（并行线程数: {actual_workers}）")
+    mode = "强制全量更新" if force else "增量更新（跳过已有数据）"
+    logger.info(f"开始更新基金净值数据...（并行线程数: {actual_workers}, 模式: {mode}）")
 
     db = SessionLocal()
     fetcher = FundDataFetcher()
 
     try:
-        init_nav_data(db, fetcher, limit=limit, max_workers=actual_workers)
+        init_nav_data(db, fetcher, limit=limit, max_workers=actual_workers, force=force)
         logger.success("基金净值数据更新完成")
     except Exception as e:
         logger.error(f"更新基金净值数据失败: {e}")
@@ -298,22 +305,23 @@ def start_scheduler():
     from apscheduler.schedulers.blocking import BlockingScheduler
     from fund_screener.config.settings import SCHEDULE_CONFIG
 
-    logger.info("启动定时任务...")
-    logger.info(
-        f"配置: 每周{SCHEDULE_CONFIG['day_of_week']} {SCHEDULE_CONFIG['hour']:02d}:{SCHEDULE_CONFIG['minute']:02d}"
-    )
-
     scheduler = BlockingScheduler()
 
-    scheduler.add_job(
-        run_all,
-        "cron",
-        day_of_week=SCHEDULE_CONFIG["day_of_week"],
-        hour=SCHEDULE_CONFIG["hour"],
-        minute=SCHEDULE_CONFIG["minute"],
-        id="fund_screening",
-        name="基金定时筛选",
-    )
+    job_kwargs = {
+        "hour": SCHEDULE_CONFIG["hour"],
+        "minute": SCHEDULE_CONFIG["minute"],
+        "id": "fund_screening",
+        "name": "基金定时筛选",
+    }
+
+    if "day_of_week" in SCHEDULE_CONFIG:
+        logger.info(
+            f"配置: 每周{SCHEDULE_CONFIG['day_of_week']} {SCHEDULE_CONFIG['hour']:02d}:{SCHEDULE_CONFIG['minute']:02d}"
+        )
+        scheduler.add_job(run_all, "cron", day_of_week=SCHEDULE_CONFIG["day_of_week"], **job_kwargs)
+    else:
+        logger.info(f"配置: 每天 {SCHEDULE_CONFIG['hour']:02d}:{SCHEDULE_CONFIG['minute']:02d}")
+        scheduler.add_job(run_all, "cron", **job_kwargs)
 
     try:
         logger.success("定时任务已启动，按 Ctrl+C 停止")
@@ -351,6 +359,7 @@ def main():
     parser.add_argument("--limit", type=int, help="限制处理的基金数量（测试用）")
     parser.add_argument("--workers", type=int, default=10, help="并行线程数（默认10）")
     parser.add_argument("--min-records", type=int, default=500, help="最少净值记录数（默认500）")
+    parser.add_argument("--force", action="store_true", help="强制全量更新（忽略已有数据）")
 
     args = parser.parse_args()
 
@@ -365,7 +374,7 @@ def main():
         update_fund_data(limit=args.limit)
 
     elif args.command == "update-nav":
-        update_nav_data(limit=args.limit, max_workers=args.workers)
+        update_nav_data(limit=args.limit, max_workers=args.workers, force=args.force)
 
     elif args.command == "screen":
         screen_funds(limit=args.limit)

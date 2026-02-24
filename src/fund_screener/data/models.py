@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, Date, DateTime, Float, Integer, String, create_engine
+from sqlalchemy import Column, Date, DateTime, Float, Index, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -65,7 +65,6 @@ class FundNav(Base):
     daily_return = Column(Float, comment="日涨跌幅")
     created_at = Column(DateTime, default=datetime.now, comment="创建时间")
 
-    # 联合唯一索引
     __table_args__ = ({"sqlite_autoincrement": True},)
 
 

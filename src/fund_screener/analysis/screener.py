@@ -58,20 +58,8 @@ class FundScreener:
             if fund.fund_size and fund.fund_size < self.config["min_fund_size"]:
                 continue
 
-            # 获取净值数据
+            # 获取净值数据（仅从数据库，不自动抓取）
             nav_data = self.repo.get_fund_nav(fund.fund_code)
-
-            if not nav_data or len(nav_data) < 252 * 3 * 0.8:
-                # 尝试从网络获取
-                nav_df = self.fetcher.fetch_fund_nav(fund.fund_code)
-                if not nav_df.empty:
-                    # 保存到数据库
-                    nav_records = nav_df.to_dict("records")
-                    self.repo.save_nav_data(fund.fund_code, nav_records)
-                    # 重新查询
-                    nav_data = self.repo.get_fund_nav(fund.fund_code)
-                else:
-                    continue
 
             if not nav_data or len(nav_data) < 252 * 3 * 0.8:
                 continue

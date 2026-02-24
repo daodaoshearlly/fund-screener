@@ -360,13 +360,13 @@ def init_fund_data(db, fetcher: FundDataFetcher, limit: int = None, max_workers:
 
 
 
-def init_nav_data(db, fetcher: FundDataFetcher, limit: int = None, max_workers: int = 10, min_records: int = 500):
+def init_nav_data(db, fetcher: FundDataFetcher, limit: int = None, max_workers: int = 10, min_records: int = 500, force: bool = False):
     """初始化/更新基金净值数据（批量并行抓取）
     
     优化：
     1. 多线程并行抓取净值数据
     2. 批量写入数据库，减少 commit 开销
-    3. 只抓取缺少净值数据或数据不足的基金
+    3. 只抓取缺少净值数据或数据不足的基金（除非 force=True）
     
     Args:
         db: 数据库会话
@@ -374,6 +374,7 @@ def init_nav_data(db, fetcher: FundDataFetcher, limit: int = None, max_workers: 
         limit: 限制处理数量（测试用）
         max_workers: 并行线程数（默认10）
         min_records: 最少需要的历史记录数（默认500条，约2年交易日）
+        force: 强制全量更新，忽略已有数据
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
     from fund_screener.data.database import FundRepository
@@ -393,12 +394,17 @@ def init_nav_data(db, fetcher: FundDataFetcher, limit: int = None, max_workers: 
     
     # 筛选需要抓取净值的基金（缺少数据或数据不足）
     funds_to_fetch = []
-    for fund in all_funds:
-        nav_count = db.query(FundNav).filter(FundNav.fund_code == fund.fund_code).count()
-        if nav_count < min_records:
-            funds_to_fetch.append(fund)
-    
-    logger.info(f"需要抓取净值的基金: {len(funds_to_fetch)} 只（当前数据不足 {min_records} 条）")
+    if force:
+        # 强制全量更新：抓取所有基金
+        funds_to_fetch = all_funds
+        logger.info(f"强制全量更新：抓取所有 {len(funds_to_fetch)} 只基金")
+    else:
+        # 增量更新：只抓取数据不足的基金
+        for fund in all_funds:
+            nav_count = db.query(FundNav).filter(FundNav.fund_code == fund.fund_code).count()
+            if nav_count < min_records:
+                funds_to_fetch.append(fund)
+        logger.info(f"需要抓取净值的基金: {len(funds_to_fetch)} 只（当前数据不足 {min_records} 条）")
     
     if not funds_to_fetch:
         logger.info("所有基金净值数据已完整")
